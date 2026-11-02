@@ -2,3 +2,5 @@
 __pycache__/
 data/
 outputs/
+models/*.keras
+models/*.csv

@@ -49,6 +49,17 @@ of the notebook (it is also in `models/model_info.json`):
 pip install tensorflow==<version from model_info.json>
 ```
 
+**Internet / field photos:** choose the plant in **"Which plant is this?"**. Measured on the 236 PlantDoc field test photos:
+
+| App setting | Accuracy |
+|---|---|
+| Plant unknown | 47.5% |
+| Plant chosen by the user | 69.5% |
+
+Choosing the plant removes confusion between look-alike diseases on different crops
+(e.g. potato vs tomato late blight). Averaging predictions over several crops and flips (test-time
+augmentation) was also tested and did not improve accuracy, so it is not used.
+
 **Demo tips:** one leaf, close-up, plain background (white paper), good light. Keep a few
 PlantVillage test images as a backup.
 

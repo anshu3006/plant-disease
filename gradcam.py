@@ -6,8 +6,9 @@ from matplotlib import colormaps
 from PIL import Image
 
 
-def grad_cam(model, img):
-    """img: HxWx3 array (0-255). Returns (heatmap 0-1, class index, probabilities)."""
+def grad_cam(model, img, class_idx=None):
+    """img: HxWx3 array (0-255). Explains class_idx (default: top class).
+    Returns (heatmap 0-1, class index, probabilities)."""
     model_layers = [l for l in model.layers if not isinstance(l, keras.layers.InputLayer)]
     gap = next(i for i, l in enumerate(model_layers) if isinstance(l, keras.layers.GlobalAveragePooling2D))
     x = tf.convert_to_tensor(img[None], tf.float32)
@@ -18,7 +19,7 @@ def grad_cam(model, img):
                 conv = x
                 tape.watch(conv)
         probs = tf.cast(x, tf.float32)
-        idx = int(tf.argmax(probs[0]))
+        idx = int(tf.argmax(probs[0])) if class_idx is None else int(class_idx)
         score = probs[:, idx]
     grads = tf.cast(tape.gradient(score, conv), tf.float32)
     conv = tf.cast(conv, tf.float32)[0]

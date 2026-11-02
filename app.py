@@ -57,8 +57,8 @@ with st.sidebar:
     threshold = st.slider("Confidence threshold", 0.0, 1.0,
                           float(model_info.get("confidence_threshold", DEFAULT_THRESHOLD)), 0.05)
     show_cam = st.checkbox("Show Grad-CAM heatmap", value=True)
-    st.markdown("**Tips for best results**\n- One leaf, close-up\n- Plain background (paper, table)\n"
-                "- Good light, no blur")
+    st.markdown("**Tips for best results**\n- Choose the plant if you know it\n"
+                "- One leaf, close-up\n- Good light, no blur")
     if model_info:
         st.caption(f"Model: {model_info.get('model', '?')}")
 
@@ -70,13 +70,25 @@ if file is None:
     st.info("Upload or take a photo of a single leaf to get a diagnosis.")
     st.stop()
 
+from inference import center_crop, plant_of, restrict_to_plant  # noqa: E402
+
 image = ImageOps.exif_transpose(Image.open(file)).convert("RGB")
-arr = np.asarray(image.resize((img_size, img_size)), dtype=np.float32)
+
+plants = sorted({plant_of(c) for c in class_names})
+chosen = st.selectbox("Which plant is this?", ["I don't know"] + plants,
+                      help="Choosing the plant makes field photos much more accurate.")
+
+crop = center_crop(image, img_size)
+arr = np.asarray(crop, dtype=np.float32)
 
 from gradcam import grad_cam, overlay  # noqa: E402  (imports TensorFlow)
 
 with st.spinner("Analysing..."):
-    cam, idx, probs = grad_cam(model, arr)
+    probs = model.predict_on_batch(arr[None])[0]
+    if chosen != "I don't know":
+        probs = restrict_to_plant(probs, class_names, chosen)
+    idx = int(np.argmax(probs))
+    cam, _, _ = grad_cam(model, arr, idx)
 
 plant, condition = pretty(class_names[idx])
 confidence = float(probs[idx])
@@ -84,15 +96,15 @@ info = disease_info.get(norm(class_names[idx]), {})
 
 left, right = st.columns(2)
 with left:
-    st.image(image, caption="Your photo", width="stretch")
+    st.image(crop, caption="What the model sees", width="stretch")
 with right:
     if show_cam:
         st.image(overlay(arr.astype(np.uint8), cam), caption="Grad-CAM: red = where the model looked",
                  width="stretch")
 
 if confidence < threshold:
-    st.warning(f"Not sure ({confidence:.0%} confidence). Please upload a clearer close-up of a single "
-               f"leaf on a plain background. Best guess: **{plant} – {condition}**.")
+    st.warning(f"Not sure ({confidence:.0%} confidence). Try choosing the plant, or a clearer "
+               f"close-up of one leaf. Best guess: **{plant} – {condition}**.")
 elif "healthy" in condition.lower():
     st.success(f"### {plant}: Healthy ✅  \nConfidence: {confidence:.1%}")
 else:
