@@ -13,6 +13,7 @@ part of the leaf the model used.
 | `gradcam.py` | Grad-CAM code used by the app |
 | `disease_info.json` | Description and treatment for each of the 38 classes |
 | `models/` | Put the trained model files here |
+| `test_images/` | 4 PlantVillage + 4 PlantDoc photos for trying the app |
 | `notebook_src/build_notebook.py` | Source that generates `train.ipynb` (edit here, then rebuild) |
 | `REPORT_OUTLINE.md` | Report structure with what to write in each section |
 
